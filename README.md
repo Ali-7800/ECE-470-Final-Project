@@ -12,4 +12,4 @@ Got UR3 robot arm to move to a specified position and back, and got a Spherical 
 
 - Used ```simxGetVisionSensorDepthBuffer``` and ```simxGetVisionSensorImage``` to get depth and color data respectivly.
 
-Thanks to the @abeljohn\ur3-robot for there python code which helped me understand how to use the commands to interface with CoppeliaSim.
+Thanks to the @abeljohn/ur3-robot for their python code which helped me understand how to use the commands to interface with CoppeliaSim.
