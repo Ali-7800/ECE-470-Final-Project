@@ -14,3 +14,5 @@ Got UR3 robot arm to move to a specified position and back, and got a Spherical 
 Thanks to
 "Am I two?"\n"No, UR3." Team
 for their python code which helped me understand how to use the commands to interface with CoppeliaSim.
+
+# Project Update 2:
