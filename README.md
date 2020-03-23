@@ -16,6 +16,8 @@ Thanks to
 for their python code which helped me understand how to use the commands to interface with CoppeliaSim.
 
 ## Project Update 2:
-Got the UR3 robot to respond to a book passing by on a conveyor belt and created forward kinematic model
+Got the UR3 robot to respond to a book passing by on a conveyor belt and created forward kinematic model for UR3 robot arm.
+
 - Defined a function to calculate the pose of the end effector from given joint angles using forward kinematics.
-- Robot detects a book on conveyor belt using ```simxGetFloatSignal``` and does a 180º rotation
+
+- Robot detects a book on conveyor belt using ```simxGetFloatSignal``` and the robot arm does a 180º base rotation after.
