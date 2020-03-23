@@ -275,7 +275,7 @@ np.set_printoptions(precision=2, suppress=True, linewidth=120)
 
 
 
-#Uncoment this block for forward kinematics simulation
+#Uncomment this block for forward kinematics simulation
 # =============================================================================
 # #Predicted Pose from forward kinematics
 # M,S = get_MS(cs_robot)
@@ -294,7 +294,7 @@ np.set_printoptions(precision=2, suppress=True, linewidth=120)
 # =============================================================================
 
 
-#Uncoment this block for proximity sensor communication simulation
+#Uncomment this block for proximity sensor communication simulation
 # =============================================================================
 # result,value = sim.simxGetFloatSignal(clientID,"beltVelocity",sim.simx_opmode_streaming)
 # while (value == 0.0):
