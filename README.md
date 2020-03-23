@@ -5,6 +5,8 @@ Team Members: Ali Albazroun - aia
 
 The goal of this project is to simulate a robot that could sort books by size and color using CoppeliaSim and Python.
 
+Project YouTube playlist: https://www.youtube.com/playlist?list=PLpN81Jj_B-xPhZFfH4yKj61GJNcMmq5qz
+
 ## Project Update 1:
 Got UR3 robot arm to move to a specified position and back, and got a Spherical Vision Sensor to output depth and color data.
 
