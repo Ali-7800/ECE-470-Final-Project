@@ -1,61 +1,308 @@
+########################################## Setup ##########################################
+
 import sim
 import time
 import math 
 import numpy as np
-
+from scipy.linalg import expm
 print ('Program started')
-
 sim.simxFinish(-1) # just in case, close all opened connections
 clientID=sim.simxStart('127.0.0.1',19999,True,True,5000,5) # Connect to CoppeliaSim
-position1 = np.array([0,0,0,0,0,0])
-position2 = np.array([180*math.pi/180,0*math.pi/180,45*math.pi/180,90*math.pi/180,0*math.pi/180,0*math.pi/180])
-# Get "handle" to the base of robot
-result, base_handle = sim.simxGetObjectHandle(clientID, 'UR3_link1_visible', sim.simx_opmode_blocking)
+if clientID == -1:
+	raise Exception('Failed connecting to remote API server')
+print("Simulation Started")
+
+position0 = np.array([0,0,0,0,0,0])
+
+
+
+########## color sorter (cs) robot setup ##########
+
+# Get "handle" for the base of color sorter (cs) robot
+result, cs_base = sim.simxGetObjectHandle(clientID, 'cs_link1_visible', sim.simx_opmode_blocking)
 
 	
-# Get handles to the all joints of robot
-result, joint_one_handle = sim.simxGetObjectHandle(clientID, 'UR3_joint1', sim.simx_opmode_blocking)
-result, joint_two_handle = sim.simxGetObjectHandle(clientID, 'UR3_joint2', sim.simx_opmode_blocking)
-result, joint_three_handle = sim.simxGetObjectHandle(clientID, 'UR3_joint3', sim.simx_opmode_blocking)
-result, joint_four_handle = sim.simxGetObjectHandle(clientID, 'UR3_joint4', sim.simx_opmode_blocking)
-result, joint_five_handle = sim.simxGetObjectHandle(clientID, 'UR3_joint5', sim.simx_opmode_blocking)
-result, joint_six_handle = sim.simxGetObjectHandle(clientID, 'UR3_joint6', sim.simx_opmode_blocking)
+# Get handles for the all joints of the color sorter (cs) robot
+result, cs_joint1 = sim.simxGetObjectHandle(clientID, 'cs_joint1', sim.simx_opmode_blocking)
+result, cs_joint2 = sim.simxGetObjectHandle(clientID, 'cs_joint2', sim.simx_opmode_blocking)
+result, cs_joint3 = sim.simxGetObjectHandle(clientID, 'cs_joint3', sim.simx_opmode_blocking)
+result, cs_joint4 = sim.simxGetObjectHandle(clientID, 'cs_joint4', sim.simx_opmode_blocking)
+result, cs_joint5 = sim.simxGetObjectHandle(clientID, 'cs_joint5', sim.simx_opmode_blocking)
+result, cs_joint6 = sim.simxGetObjectHandle(clientID, 'cs_joint6', sim.simx_opmode_blocking)
 
-# Get Sensor Handle
-result, sensorRGB_handle = sim.simxGetObjectHandle(clientID, 'sphericalVisionRGBAndDepth_sensorRGB', sim.simx_opmode_blocking)
-result, sensorDepth_handle = sim.simxGetObjectHandle(clientID, 'sphericalVisionRGBAndDepth_sensorDepth', sim.simx_opmode_blocking)
+cs_joints = [cs_joint1,cs_joint2,cs_joint3,cs_joint4,cs_joint5,cs_joint6]
+
+# Get handle for suction cup
+result, cs_succ = sim.simxGetObjectHandle(clientID, 'cs_succ', sim.simx_opmode_blocking)
 
 
-# Move to position 1  
-sim.simxSetJointTargetPosition(clientID, joint_one_handle, position1[0], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_two_handle, position1[1], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_three_handle, position1[2], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_four_handle, position1[3], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_five_handle, position1[4], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_six_handle, position1[5], sim.simx_opmode_oneshot)
-time.sleep(2)
+# Get handle for suction cup connector
+result, cs_connection = sim.simxGetObjectHandle(clientID, 'cs_connection', sim.simx_opmode_blocking)
 
-# Move to position 2  
+#makes calling functions easier
+cs_robot = [cs_base,cs_joints,cs_connection,cs_succ]
 
-sim.simxSetJointTargetPosition(clientID, joint_one_handle, position2[0], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_two_handle, position2[1], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_three_handle, position2[2], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_four_handle, position2[3], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_five_handle, position2[4], sim.simx_opmode_oneshot)
-time.sleep(0)
-sim.simxSetJointTargetPosition(clientID, joint_six_handle, position2[5], sim.simx_opmode_oneshot)
-time.sleep(2)
+####################################################
+########### size sorter (ss) robot setup ###########
 
-# Access Sensor Measurement
-returnCode,res,DepthData = sim.simxGetVisionSensorDepthBuffer(clientID,sensorDepth_handle,sim.simx_opmode_blocking)
-returnCode,res,RGBData = sim.simxGetVisionSensorImage(clientID,sensorRGB_handle,1,sim.simx_opmode_blocking)
-print (DepthData,RGBData,res)
+# Get "handle" for the base of size sorter (ss) robot
+result, ss_base = sim.simxGetObjectHandle(clientID, 'ss_link1_visible', sim.simx_opmode_blocking)
+
+	
+# Get handles for the all joints of the color sorter (cs) robot
+result, ss_joint1 = sim.simxGetObjectHandle(clientID, 'ss_joint1', sim.simx_opmode_blocking)
+result, ss_joint2 = sim.simxGetObjectHandle(clientID, 'ss_joint2', sim.simx_opmode_blocking)
+result, ss_joint3 = sim.simxGetObjectHandle(clientID, 'ss_joint3', sim.simx_opmode_blocking)
+result, ss_joint4 = sim.simxGetObjectHandle(clientID, 'ss_joint4', sim.simx_opmode_blocking)
+result, ss_joint5 = sim.simxGetObjectHandle(clientID, 'ss_joint5', sim.simx_opmode_blocking)
+result, ss_joint6 = sim.simxGetObjectHandle(clientID, 'ss_joint6', sim.simx_opmode_blocking)
+
+ss_joints = [ss_joint1,ss_joint2,ss_joint3,ss_joint4,ss_joint5,ss_joint6]
+
+# Get handle for suction cup
+result, ss_succ = sim.simxGetObjectHandle(clientID, 'ss_succ', sim.simx_opmode_blocking)
+
+
+# Get handle for suction cup connector
+result, ss_connection = sim.simxGetObjectHandle(clientID, 'ss_connection', sim.simx_opmode_blocking)
+
+#makes calling functions easier
+ss_robot = [ss_base,ss_joints,ss_connection,ss_succ]
+
+
+####################################################
+################# Joint Functions ##################
+
+#Function to find handle 2 position with resepct to handle 1 (world frame by default )
+#Format: position = [x,y,z]
+def getPosition(handle2,handle1 = -1):
+    result,position = sim.simxGetObjectPosition(clientID, handle2, handle1,sim.simx_opmode_blocking)
+    return position
+
+#Function to find handle 2 oreintation with resepct to handle 1 (world frame by default )
+#Format: Rotation Matrix R   
+def getOrientation(handle2,handle1 = -1):
+    result, Quaternions = sim.simxGetObjectQuaternion(clientID, handle2 , handle1,sim.simx_opmode_blocking)
+    x = Quaternions[0]
+    y = Quaternions[1]
+    z = Quaternions[2]
+    w = Quaternions[3]
+    R = np.array([[1-2*(y**2)-2*(z**2),2*x*y-2*w*z,2*x*z+2*w*y],[2*x*y+2*w*z,1-2*(x**2)-2*(z**2),2*y*z-2*w*x],[2*x*z-2*w*y,2*y*z+2*w*x,1-2*(x**2)-2*(y**2)]])
+    return R
+
+#Joint Move Function
+def moveJoints(robot,angles):
+    for joint in enumerate(robot[1]):
+        sim.simxSetJointTargetPosition(clientID, joint[1], angles[joint[0]], sim.simx_opmode_oneshot)
+        time.sleep(0)
+    time.sleep(5)
+
+
+# Get distances measurements from each joint center to base frame for forward kinematics
+def getJointDistances(robot):
+    X = []
+    Y = []
+    Z = []
+    for joint in robot[1]:
+        vector = getPosition(joint,robot[0])
+        X.append(vector[0])
+        Y.append(vector[1])
+        Z.append(vector[2])
+    return X,Y,Z
+
+
+# Function that used to read joint angles
+def getJointAngles(robot):
+    theta = []   
+    for joint in robot[1]:
+        result, angle = sim.simxGetJointPosition(clientID, joint, sim.simx_opmode_blocking)
+        if result != sim.simx_return_ok:
+            raise Exception('could not get' + str(joint+1) +  'joint variable')
+        theta.append(angle)
+    return theta
+
+# Function that is used to calculate joint lengths (WIP)
+def getJointLengths(robot):
+	moveJoints(robot,position0)
+	X,Y,Z = getJointDistances(robot)
+	x_c,y_c,z_c = getPosition(robot[2],robot[1][5])
+	lengths = []
+	lengths.append(0) #l0
+	lengths.append(Z[0]) #l1
+	lengths.append(abs(X[1] - X[0])) #l2
+	lengths.append(abs(Z[2] - Z[1])) #l3
+	lengths.append(abs(X[3] - X[2])) #l4
+	lengths.append(abs(Z[3] - Z[2])) #l5
+	lengths.append(abs(X[4] - X[3])) #l6
+	lengths.append(abs(Z[5] - Z[4])) #l7
+	lengths.append(abs(x_c)) #l8
+	lengths.append(0) #l9
+	lengths.append(0) #l10
+	return lengths
+
+  
+####################################################
+########### Forward Kinematics Functions ###########
+
+#get endPose using coppelieaSim functions used to confirm forward kinematics 
+def getEndPose(robot):
+    T = np.eye(4)
+    x,y,z = getPosition(robot[3],robot[0])
+    T[0:3,3] = np.array([x,y,z])
+    T[0:3,0:3] = getOrientation(robot[3],robot[0])
+    return T
+
+#get pose M and screws S
+def get_MS(robot):
+    #Intialize the robot to position0
+    moveJoints(robot,position0)
+    X,Y,Z = getJointDistances(robot)
+    M = np.eye(4)
+    S = np.zeros((6,6))
+    
+    #Get position and orientation of end effector
+    M[0:3,0:3] = getOrientation(robot[3],robot[0])
+    M[0:3,3] = np.array(getPosition(robot[3],robot[0]))
+    
+    #Joint 1 screw
+    S[0:3,0] = np.array([0,0,1])
+    S[3:6,0] = -np.cross(S[0:3,0],[X[0],Y[0],Z[0]])
+    
+    #Joint 2 screw
+    S[0:3,1] = np.array([-1,0,0])
+    S[3:6,1] = -np.cross(S[0:3,1],[X[1],Y[1],Z[1]])
+    
+    #Joint 3 screw
+    S[0:3,2] = np.array([-1,0,0])
+    S[3:6,2] = -np.cross(S[0:3,2],[X[2],Y[2],Z[2]])
+    
+    #Joint 4 screw
+    S[0:3,3] = np.array([-1,0,0])
+    S[3:6,3] = -np.cross(S[0:3,3],[X[3],Y[3],Z[3]])
+    
+    #Joint 5 screw
+    S[0:3,4] = np.array([0,0,1])
+    S[3:6,4] = -np.cross(S[0:3,4],[X[4],Y[4],Z[4]])
+    
+    #Joint 6 screw
+    S[0:3,5] = np.array([-1,0,0])
+    S[3:6,5] = -np.cross(S[0:3,5],[X[5],Y[5],Z[5]])
+    return M,S
+
+
+# get matrix [s] from vector s
+def S2MAT(S):
+    S_MAT = np.zeros((4,4))
+    S_MAT[0,3] = S[3]
+    S_MAT[1,3] = S[4]
+    S_MAT[2,3] = S[5]
+    S_MAT[0,1] = -S[2]
+    S_MAT[0,2] = S[1]
+    S_MAT[1,0] = S[2]
+    S_MAT[1,2] = -S[0]
+    S_MAT[2,0] = -S[1]
+    S_MAT[2,1] = S[0]
+    return S_MAT
+
+
+#Forward Kinematics Function given the angles theta, the screw matrix S, and the base pose M
+def fk(theta, M, S):
+    T = M
+    for i in range(0,6):
+        T = np.dot(expm(S2MAT(S[:,5-i])*theta[5-i]),T)
+    return T
+
+
+
+####################################################
+########### Inverse Kinematics Functions ###########
+
+#WIP
+def invk(robot, x_w, y_w, z_w, yaw=0):
+	#World frame to base frame
+	l = getJointLengths(robot)
+	basePosition = getPosition(robot[0])
+	x = x_w - basePosition[0]
+	y = y_w - basePosition[1]
+	z = z_w - basePosition[2]    
+    # theta1 to theta6
+	thetas = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+	xcen = x - l[9] * np.cos( yaw )
+	ycen = y - l[9] * np.sin( yaw )  
+	zcen = z
+
+	big_angle = np.arctan2(ycen, xcen)
+	small_angle = np.arcsin( (l[2]-l[4]+l[6]) / (xcen**2 + ycen**2)**0.5 ) 
+
+	thetas[0] = big_angle - small_angle
+
+	x3end = xcen - l[7] * np.cos( thetas[0] ) + ( l[6] - l[4] + l[2] ) * np.sin( thetas[0] )
+	y3end = ycen - l[7] * np.sin( thetas[0] ) - ( l[6] - l[4] + l[2] ) * np.cos( thetas[0] ) 
+	z3end = zcen + l[10] + l[8] 
+	thetas[5] = np.pi/2 - yaw + thetas[0]
+
+	R = (x3end**2 + y3end**2 + (z3end-l[1])**2 )**0.5
+	alpha = np.arcsin( (z3end - l[1]) / R )
+	beta = np.arccos( (R**2 + l[3]**2 - l[5]**2) / (2*l[3]*R) )
+	thetas[1]= - alpha - beta
+	yeet = np.arccos( (l[3]**2 + l[5]**2 - R**2) / (2*l[3]*l[5]) )
+
+	thetas[2]= np.pi - yeet
+	thetas[3]= -(np.pi + thetas[1] - yeet)
+	thetas[4]= -np.pi/2
+	thetas[1] += 0.5 * np.pi
+	return thetas
+
+
+
+####################################################
+################## Sensors Setup ###################
+
+
+# Get Proximity Sensors Handles
+result,Proximity_sensor_left = sim.simxGetObjectHandle(clientID, "Proximty_sensor_left", sim.simx_opmode_buffer)
+
+
+
+
+
+
+
+########################################## Simulation ##########################################
+#angles
+position1 = np.array([0*math.pi/180,0*math.pi/180,45*math.pi/180,90*math.pi/180,0*math.pi/180,0*math.pi/180])
+np.set_printoptions(precision=2, suppress=True, linewidth=120)
+
+
+
+#Uncoment this block for forward kinematics simulation
+# =============================================================================
+# #Predicted Pose from forward kinematics
+# M,S = get_MS(cs_robot)
+# message1 = """Predicted Pose: 
+# """ + str(fk(position1, M, S)) + """
+# """
+# sim.simxAddStatusbarMessage(clientID,message1,sim.simx_opmode_oneshot)
+# 
+# #Actual Pose from CoppeliaSim
+# moveJoints(cs_robot,position1)
+# time.sleep(5)
+# message2 = """Actual Pose: 
+# """ + str(getEndPose(cs_robot)) + """
+# """
+# sim.simxAddStatusbarMessage(clientID,message2,sim.simx_opmode_oneshot)
+# =============================================================================
+
+
+#Uncoment this block for proximity sensor communication simulation
+# =============================================================================
+# result,value = sim.simxGetFloatSignal(clientID,"beltVelocity",sim.simx_opmode_streaming)
+# while (value == 0.0):
+#        result,value = sim.simxGetFloatSignal(clientID,"beltVelocity",sim.simx_opmode_buffer)
+# sim.simxAddStatusbarMessage(clientID,"Book Detected!",sim.simx_opmode_oneshot)
+# moveJoints(cs_robot,position1)
+# =============================================================================
+
+
+
+
