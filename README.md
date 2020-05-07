@@ -22,15 +22,29 @@ Got the UR3 robot to respond to a book passing by on a conveyor belt and created
 
 - Defined a function to calculate the pose of the end effector from given joint angles using forward kinematics.
 
-- Proximity sensor detects a book on conveyor belt and sends a signal using ```simxsetFloatSignal``` 
+- Proximity sensor detects a book on conveyor belt and sends a signal using ```simxsetFloatSignal```.
 
 - Signal is recieved in python using ```simxgetFloatSignal``` then the robot arm does a 180º base rotation.
 
 ## Project Update 3:
-Got the Color Sorter UR3 arm to color sort book passing by the conveyor belt using an inverse kinematics function.
+Got the Color Sorter UR3 arm to color sort book passing by the conveyor belt using inverse kinematics.
 
-- Defined a function to calculate the joint angles of a robot given the world coordinates of the gripper
+- Defined a function to calculate the joint angles of a robot given the world coordinates of the gripper.
 
-- Created an algorithm to sort the books using vision sensor data from ```simxGetVisionSensorImage```
+- Created an algorithm to sort the books using vision sensor data from ```simxGetVisionSensorImage```.
 
-- Set up communication between proximty sensors, conveyor belts, and UR3 arms using ```simxgetFloatSignal``` and ```simxsetFloatSignal```
+- Set up communication between proximity sensors, conveyor belts, and UR3 arms using ```simxgetFloatSignal``` and ```simxsetFloatSignal```.
+
+## Final Project Update:
+Got the Size Sorter UR3 arm to sort books by size using inverse kinematics.
+
+- Created an algorithm to sort the books using data from two proximity sensors.
+
+- Redefined the ```moveJoints``` function to allow the robots to pick and place the books without knocking the rest down.
+
+- Refined the communication between proximity sensors, conveyor belts, and UR3 arms.
+
+
+
+
+
