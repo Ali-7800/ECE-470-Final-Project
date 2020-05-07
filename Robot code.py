@@ -37,10 +37,24 @@ def getOrientation(handle2,handle1 = -1):
 
 #Joint Move Function
 def moveJoints(robot,angles):
-    for i in range(1,7):
-        sim.simxSetJointTargetPosition(clientID, robot[1][6-i], angles[6-i], sim.simx_opmode_oneshot)
-        time.sleep(0)
-    time.sleep(5)
+    #set joints 2 and 3 to zero stop the robot from knocking everything in its path
+    sim.simxSetJointTargetPosition(clientID, robot[1][1], 0, sim.simx_opmode_oneshot)
+    sim.simxSetJointTargetPosition(clientID, robot[1][2], 0, sim.simx_opmode_oneshot)
+    
+    #rotate joint 1 and joint 6 to apropriate position first
+    sim.simxSetJointTargetPosition(clientID, robot[1][0], angles[0], sim.simx_opmode_oneshot)
+    time.sleep(2)
+    sim.simxSetJointTargetPosition(clientID, robot[1][5], angles[5], sim.simx_opmode_oneshot)
+    time.sleep(0.5)
+    
+    #rotate joints 3 through 5
+    for i in range(2,5):
+        sim.simxSetJointTargetPosition(clientID, robot[1][i], angles[i], sim.simx_opmode_oneshot)
+        time.sleep(0.5)
+    time.sleep(0.7)
+    #lastly rotate joint 2 
+    sim.simxSetJointTargetPosition(clientID, robot[1][1], angles[1], sim.simx_opmode_oneshot)
+    time.sleep(0.5)
 
 
 # Get distances measurements from each joint center to base frame for forward kinematics
@@ -259,8 +273,8 @@ result, cs_connection = sim.simxGetObjectHandle(clientID, 'cs_connection', sim.s
 cs_robot = [cs_base,cs_joints,cs_connection,cs_succ]
 
 #cs Table and Conveyors Setup
-cs_left_conveyor = invk(cs_robot,-2.0439,-0.6504,0.1658)
-cs_table = invk(cs_robot,-1.65,-0.95,0.22)
+cs_left_conveyor = invk(cs_robot,-2.0629,-0.6504,0.15)
+cs_table = invk(cs_robot,-1.65,-0.95,0.21)
 
 #cs vision sensor
 result, cs_vis = sim.simxGetObjectHandle(clientID, 'cs_Vision_sensor', sim.simx_opmode_blocking)
@@ -294,104 +308,164 @@ result, ss_connection = sim.simxGetObjectHandle(clientID, 'ss_connection', sim.s
 ss_robot = [ss_base,ss_joints,ss_connection,ss_succ]
 
 #ss table and coneyvor setup
-ss_table = invk(ss_robot,-0.8,0.175,0.22)
+ss_table = invk(ss_robot,-0.8,0.175,0.21)
 ss_right_conveyor = invk(ss_robot,-0.425,0.6025,0.3)
 
 
 
-########################################## Simulation ##########################################
+###################################### Sorting Functions  #######################################
 
 
+#####################################################
+##################### color sort ####################
 
-####################################### cs robot routine ########################################
-
-color_list = []
-result,cs_bookline = sim.simxGetFloatSignal(clientID,"cs_bookline",sim.simx_opmode_streaming)
-result,book = sim.simxGetFloatSignal(clientID,"book",sim.simx_opmode_streaming)
-
-#set the robot as busy
-sim.simxSetFloatSignal(clientID, 'cs_robotBusy', 1, sim.simx_opmode_oneshot)
-
-while(cs_bookline == 0):
+def color_sort():
+    color_list = []
+    result,cs_bookline = sim.simxGetFloatSignal(clientID,"cs_bookline",sim.simx_opmode_streaming)
+    result,book = sim.simxGetFloatSignal(clientID,"book",sim.simx_opmode_streaming)
+    
     #move to intial position
     moveJoints(cs_robot,position0)
     
-    #wait for book to be detected
-    while(book == 0):
-        result,book = sim.simxGetFloatSignal(clientID,"book",sim.simx_opmode_buffer)
+    #set the robot as busy
+    sim.simxSetFloatSignal(clientID, 'cs_robotBusy', 1, sim.simx_opmode_oneshot)
     
-    #move book to cs table
-    moveJoints(cs_robot,cs_left_conveyor)
-    sim.simxSetFloatSignal(clientID, 'cs_succ', 1, sim.simx_opmode_oneshot) # pick up the book
-    moveJoints(cs_robot,cs_table)
-    sim.simxSetFloatSignal(clientID, 'cs_succ' , 0, sim.simx_opmode_oneshot) # drop the book off
+    while(cs_bookline == 0):        
+        #wait for book to be detected
+        while(book == 0):
+            result,book = sim.simxGetFloatSignal(clientID,"book",sim.simx_opmode_buffer)
+        
+        #move book to cs table
+        moveJoints(cs_robot,cs_left_conveyor)
+        sim.simxSetFloatSignal(clientID, 'cs_succ', 1, sim.simx_opmode_oneshot) # pick up the book
+        time.sleep(0.5)
+        moveJoints(cs_robot,cs_table)
+        sim.simxSetFloatSignal(clientID, 'cs_succ' , 0, sim.simx_opmode_oneshot) # drop the book off
+        
+        #check book color
+        result,res,image = sim.simxGetVisionSensorImage(clientID, cs_vis, 0 ,sim.simx_opmode_blocking)
+        book_color = [image[0],image[1],image[2]] #RGB color value
+        book_order = len(color_list) #assumes color is new initially
+        rng = 10 #range to determine wheter to colors are the same or not
+        
+        #loop that check RGB values of every color list with book_color to determine is the same as a color in color_list
+        for color in enumerate(color_list):
+                if (abs(color[1][0]-book_color[0])<rng) and (abs(color[1][1]-book_color[1])<rng) and (abs(color[1][2]-book_color[2])<rng):
+                    book_order = color[0]
+        
+        #if color is new append it to the color_list
+        if (book_order == len(color_list)):
+            color_list.append(book_color)
+        
+        #set the book position depending on its order
+        book_position = invk(cs_robot,-1.2952,-0.68+0.15*(book_order),0.25)
+        
+        #move and place the book in the proper position
+        sim.simxSetFloatSignal(clientID, 'cs_succ', 1, sim.simx_opmode_oneshot) # pick up the book
+        moveJoints(cs_robot,book_position)
+        sim.simxSetFloatSignal(clientID, 'cs_succ', 0, sim.simx_opmode_oneshot) # drop the book off
+        result,cs_bookline = sim.simxGetFloatSignal(clientID,"cs_bookline",sim.simx_opmode_buffer)
+        time.sleep(1)
     
-    #check book color
-    result,res,image = sim.simxGetVisionSensorImage(clientID, cs_vis, 0 ,sim.simx_opmode_blocking)
-    book_color = [image[0],image[1],image[2]] #RGB color value
-    book_order = len(color_list) #assumes color is new initially
-    rng = 10 #range to determine wheter to colors are the same or not
-    
-    #loop that check RGB values of every color list with book_color to determine is the same as a color in color_list
-    for color in enumerate(color_list):
-            if (abs(color[1][0]-book_color[0])<rng) and (abs(color[1][1]-book_color[1])<rng) and (abs(color[1][2]-book_color[2])<rng):
-                book_order = color[0]
-    
-    #if color is new append it to the color_list
-    if (book_order == len(color_list)):
-        color_list.append(book_color)
-    
-    #set the book position depending on its order
-    book_position = invk(cs_robot,-1.2402,-0.6504+0.15*(book_order),0.3)
-    
-    #move and place the book in the proper position
-    sim.simxSetFloatSignal(clientID, 'cs_succ', 1, sim.simx_opmode_oneshot) # pick up the book
-    moveJoints(cs_robot,book_position)
-    sim.simxSetFloatSignal(clientID, 'cs_succ', 0, sim.simx_opmode_oneshot) # drop the book off
-    result,cs_bookline = sim.simxGetFloatSignal(clientID,"cs_bookline",sim.simx_opmode_buffer)
-    time.sleep(1)
+    #set the robot as free
+    sim.simxSetFloatSignal(clientID, 'cs_robotBusy', 0 , sim.simx_opmode_oneshot)
+    moveJoints(cs_robot,position0)
+    return color_list
 
-#set the robot as free
-sim.simxSetFloatSignal(clientID, 'cs_robotBusy', 0 , sim.simx_opmode_oneshot)
-moveJoints(cs_robot,position0)
+#####################################################
+###################### size sort ####################
 
-#################################################################################################
-####################################### ss robot routine (WIP) ########################################
+def size_sort():
+    result,stack = sim.simxGetFloatSignal(clientID,"stack",sim.simx_opmode_streaming)
+    result,height = sim.simxGetFloatSignal(clientID,"height",sim.simx_opmode_streaming)
+    result,size = sim.simxGetFloatSignal(clientID,"size",sim.simx_opmode_streaming)
 
-result,ss_bookline = sim.simxGetFloatSignal(clientID,"ss_bookline",sim.simx_opmode_streaming)
-result,stack = sim.simxGetFloatSignal(clientID,"stack",sim.simx_opmode_streaming)
-result,length = sim.simxGetFloatSignal(clientID,"length",sim.simx_opmode_streaming)
-
-#set the robot as busy
-sim.simxSetFloatSignal(clientID, 'ss_robotBusy', 1, sim.simx_opmode_oneshot)
-
-while(ss_bookline == 0):
-    #move to intial position
-    moveJoints(ss_robot,position0)
+    size_list = []
     
-    #wait for stack to be detected
+     #wait for stack to be detected
     while(stack == 0):
         result,stack = sim.simxGetFloatSignal(clientID,"stack",sim.simx_opmode_buffer)
     
-    #get stack length
-    result,length = sim.simxGetFloatSignal(clientID,"length",sim.simx_opmode_buffer)
+    #set the robot as busy
+    sim.simxSetFloatSignal(clientID, 'ss_robotBusy', 1, sim.simx_opmode_oneshot)
     
-    #set book position depending on stack length
-    book_position = invk(ss_robot,-1.2402,0.6025,0.15+length)
+    while(stack > 0):
+        #get top book height
+        result,height = sim.simxGetFloatSignal(clientID,"height",sim.simx_opmode_buffer)
+        
+        #set book position depending on stack length
+        book_position = invk(ss_robot,-1.2952,0.604,height)
+    
+        #move book to ss table
+        moveJoints(ss_robot,book_position)
+        sim.simxSetFloatSignal(clientID, 'ss_succ', 1, sim.simx_opmode_oneshot) # pick up the book
+        time.sleep(1)
+        moveJoints(ss_robot,ss_table)
+        sim.simxSetFloatSignal(clientID, 'ss_succ' , 0, sim.simx_opmode_oneshot) # drop the book off
+        time.sleep(2)
+        #get book size
+        result,size = sim.simxGetFloatSignal(clientID,"size",sim.simx_opmode_buffer)
+        size_list.append([len(size_list),size,height])
 
-    #move book to ss table
-    moveJoints(ss_robot,book_position)
-    sim.simxSetFloatSignal(clientID, 'ss_succ', 1, sim.simx_opmode_oneshot) # pick up the book
-    moveJoints(ss_robot,position0)
-    moveJoints(ss_robot,ss_table)
-    sim.simxSetFloatSignal(clientID, 'ss_succ' , 0, sim.simx_opmode_oneshot) # drop the book off
+        #separate stack
+        sim.simxSetFloatSignal(clientID, 'ss_succ', 1, sim.simx_opmode_oneshot) # pick up the book
+        book_position = invk(ss_robot,-0.425,0.6025-(len(size_list)-1)*0.15,0.15) 
+        moveJoints(ss_robot,book_position) #move to appropriate position
+        sim.simxSetFloatSignal(clientID, 'ss_succ', 0, sim.simx_opmode_oneshot) # drop the book off
+        time.sleep(1)
+        result,stack = sim.simxGetFloatSignal(clientID,"stack",sim.simx_opmode_buffer)
+        
+        
     
-    sim.simxSetFloatSignal(clientID, 'ss_succ', 1, sim.simx_opmode_oneshot) # pick up the book
-    moveJoints(ss_robot,ss_right_conveyor)
-    sim.simxSetFloatSignal(clientID, 'ss_succ', 0, sim.simx_opmode_oneshot) # drop the book off
+    #loop to get book thickness
+    for i in range(len(size_list)-1):
+        size_list[i][2] = size_list[i][2]-size_list[i+1][2]
+    size_list[len(size_list)-1][2] = size_list[len(size_list)-1][2] - 0.15
+         
+    
+    #sort the size list
+    size_list = sorted(size_list, key=lambda size: size[1], reverse=True)
+
+    #largest books
+    largest_book = size_list[0]
+    
+    #remove largest book from size list
+    size_list.pop(0) 
+    
+    #intial stack height
+    height = largest_book[2]+0.15
+    
+    
+    #stack the books depending on size
+    for i in range(len(size_list)):
+        intial_position = invk(ss_robot,-0.425,0.6025-(size_list[i][0])*0.15,0.145)
+        moveJoints(ss_robot,intial_position)
+        sim.simxSetFloatSignal(clientID, 'ss_succ', 1, sim.simx_opmode_oneshot) # pick up the book
+        time.sleep(1)
+        
+        #define a mid position to stop the robot from knocking over other robots
+        mid_position = getJointAngles(ss_robot)
+        mid_position[1] = 0
+        
+        moveJoints(ss_robot,mid_position)
+        
+        #finding height so the robot knows where to put the robot
+        height = height + size_list[i][2]
+        
+        #get the largest book's position
+        target_position = invk(ss_robot,-0.425,0.6025-(largest_book[0])*0.15,height)
+        
+        #move to the smaller book on top of the bigger book
+        moveJoints(ss_robot,target_position)
+        sim.simxSetFloatSignal(clientID, 'ss_succ', 0, sim.simx_opmode_oneshot) # drop the book off
+    
     time.sleep(1)
-    result,ss_bookline = sim.simxGetFloatSignal(clientID,"ss_bookline",sim.simx_opmode_buffer)
-
-#set the robot as free
-sim.simxSetFloatSignal(clientID, 'ss_robotBusy', 0 , sim.simx_opmode_oneshot)
-moveJoints(ss_robot,position0)
+    #set the robot as free
+    sim.simxSetFloatSignal(clientID, 'ss_robotBusy', 0 , sim.simx_opmode_oneshot)
+    time.sleep(10) #wait for book stack to reach the end
+    return size_list
+    
+########################################## simulation ###########################################
+color_list = color_sort()
+for color in color_list:
+    size_sort()
