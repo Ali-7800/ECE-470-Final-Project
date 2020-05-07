@@ -24,7 +24,7 @@ Got the UR3 robot to respond to a book passing by on a conveyor belt and created
 
 - Proximity sensor detects a book on conveyor belt and sends a signal using ```simxsetFloatSignal```.
 
-- Signal is recieved in python using ```simxgetFloatSignal``` then the robot arm does a 180º base rotation.
+- Signal is received in python using ```simxgetFloatSignal``` then the robot arm does a 180º base rotation.
 
 ## Project Update 3:
 Got the Color Sorter UR3 arm to color sort book passing by the conveyor belt using inverse kinematics.
