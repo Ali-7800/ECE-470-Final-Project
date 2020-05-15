@@ -44,6 +44,10 @@ Got the Size Sorter UR3 arm to sort books by size using inverse kinematics.
 
 - Refined the communication between proximity sensors, conveyor belts, and UR3 arms.
 
+- Fine tuned inverse kinematics for better stacking.
+
+
+
 
 
 
