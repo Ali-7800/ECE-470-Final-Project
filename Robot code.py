@@ -1,8 +1,6 @@
 ########################################## Setup ##########################################
-
 import sim
 import time
-import math 
 import numpy as np
 from scipy.linalg import expm
 print ('Program started')
@@ -273,8 +271,8 @@ result, cs_connection = sim.simxGetObjectHandle(clientID, 'cs_connection', sim.s
 cs_robot = [cs_base,cs_joints,cs_connection,cs_succ]
 
 #cs Table and Conveyors Setup
-cs_left_conveyor = invk(cs_robot,-2.0629,-0.6504,0.15)
-cs_table = invk(cs_robot,-1.65,-0.95,0.21)
+cs_left_conveyor = invk(cs_robot,-2.0629,-0.6536,0.1644)
+cs_table = invk(cs_robot,-1.65,-0.95,0.215)
 
 #cs vision sensor
 result, cs_vis = sim.simxGetObjectHandle(clientID, 'cs_Vision_sensor', sim.simx_opmode_blocking)
@@ -308,7 +306,7 @@ result, ss_connection = sim.simxGetObjectHandle(clientID, 'ss_connection', sim.s
 ss_robot = [ss_base,ss_joints,ss_connection,ss_succ]
 
 #ss table and coneyvor setup
-ss_table = invk(ss_robot,-0.8,0.175,0.21)
+ss_table = invk(ss_robot,-0.8,0.175,0.215)
 ss_right_conveyor = invk(ss_robot,-0.425,0.6025,0.3)
 
 
@@ -358,11 +356,13 @@ def color_sort():
             color_list.append(book_color)
         
         #set the book position depending on its order
-        book_position = invk(cs_robot,-1.2952,-0.68+0.15*(book_order),0.25)
+        book_position = invk(cs_robot,-1.2952,-0.68+0.154*(book_order),0.25)
         
         #move and place the book in the proper position
-        sim.simxSetFloatSignal(clientID, 'cs_succ', 1, sim.simx_opmode_oneshot) # pick up the book
+        sim.simxSetFloatSignal(clientID, 'cs_succ', 1, sim.simx_opmode_oneshot) # pick up the book\
+        time.sleep(0.5)
         moveJoints(cs_robot,book_position)
+        time.sleep(1.1)
         sim.simxSetFloatSignal(clientID, 'cs_succ', 0, sim.simx_opmode_oneshot) # drop the book off
         result,cs_bookline = sim.simxGetFloatSignal(clientID,"cs_bookline",sim.simx_opmode_buffer)
         time.sleep(1)
@@ -394,7 +394,7 @@ def size_sort():
         result,height = sim.simxGetFloatSignal(clientID,"height",sim.simx_opmode_buffer)
         
         #set book position depending on stack length
-        book_position = invk(ss_robot,-1.2952,0.604,height)
+        book_position = invk(ss_robot,-1.2952,0.6111,height)
     
         #move book to ss table
         moveJoints(ss_robot,book_position)
@@ -409,10 +409,10 @@ def size_sort():
 
         #separate stack
         sim.simxSetFloatSignal(clientID, 'ss_succ', 1, sim.simx_opmode_oneshot) # pick up the book
-        book_position = invk(ss_robot,-0.425,0.6025-(len(size_list)-1)*0.15,0.15) 
+        book_position = invk(ss_robot,-0.425,0.6025-(len(size_list)-1)*0.16,0.17) 
         moveJoints(ss_robot,book_position) #move to appropriate position
         sim.simxSetFloatSignal(clientID, 'ss_succ', 0, sim.simx_opmode_oneshot) # drop the book off
-        time.sleep(1)
+        time.sleep(1.1)
         result,stack = sim.simxGetFloatSignal(clientID,"stack",sim.simx_opmode_buffer)
         
         
@@ -438,7 +438,7 @@ def size_sort():
     
     #stack the books depending on size
     for i in range(len(size_list)):
-        intial_position = invk(ss_robot,-0.425,0.6025-(size_list[i][0])*0.15,0.145)
+        intial_position = invk(ss_robot,-0.425,0.6025-(size_list[i][0])*0.15,0.14)
         moveJoints(ss_robot,intial_position)
         sim.simxSetFloatSignal(clientID, 'ss_succ', 1, sim.simx_opmode_oneshot) # pick up the book
         time.sleep(1)
@@ -457,12 +457,14 @@ def size_sort():
         
         #move to the smaller book on top of the bigger book
         moveJoints(ss_robot,target_position)
+        time.sleep(1.5)
         sim.simxSetFloatSignal(clientID, 'ss_succ', 0, sim.simx_opmode_oneshot) # drop the book off
+        time.sleep(1)
     
     time.sleep(1)
     #set the robot as free
     sim.simxSetFloatSignal(clientID, 'ss_robotBusy', 0 , sim.simx_opmode_oneshot)
-    time.sleep(10) #wait for book stack to reach the end
+    time.sleep(3) #wait for book stack to reach the end
     return size_list
     
 ########################################## simulation ###########################################
